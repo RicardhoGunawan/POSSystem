@@ -43,9 +43,10 @@
                         <select x-model="selectedCategory" @change="filterProducts()" class="border p-2 rounded">
                             <option value="">All Categories</option>
                             @foreach($categories as $category)
-                                <option value="{{ $category }}">{{ $category }}</option>
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
                         </select>
+
                     </div>
                     <div class="relative">
                         <input type="text" x-model="searchQuery" @input="filterProducts()" 
@@ -261,6 +262,7 @@
                 lastOrderNumber: '',
                 lastOrderAmount: 0,
                 lastOrderPaymentMethod: '',
+                lastOrderId: '', // Added to store the order ID
                 
                 init() {
                     // Set CSRF token for AJAX requests
@@ -284,13 +286,21 @@
                 },
                 
                 filterProducts() {
+                    console.log("Selected Category:", this.selectedCategory);
                     this.filteredProducts = this.products.filter(product => {
-                        const matchesCategory = !this.selectedCategory || product.category === this.selectedCategory;
+                        console.log("Product:", product);
+                        
+                        // Periksa apakah kategori produk sesuai
+                        const matchesCategory = !this.selectedCategory || product.category_id == this.selectedCategory;
+
+                        // Filter berdasarkan pencarian
                         const matchesSearch = !this.searchQuery || 
                             product.name.toLowerCase().includes(this.searchQuery.toLowerCase());
+
                         return matchesCategory && matchesSearch;
                     });
                 },
+
                 
                 addToCart(product) {
                     const existingItemIndex = this.cart.findIndex(item => item.product_id === product.id);
@@ -376,6 +386,7 @@
                         
                         if (data.success) {
                             // Store the last order info for receipt
+                            this.lastOrderId = data.order.id; // Store the order ID
                             this.lastOrderNumber = data.order.order_number;
                             this.lastOrderAmount = data.order.final_amount;
                             this.lastOrderPaymentMethod = data.order.payment_method.name;
@@ -409,108 +420,14 @@
                 },
                 
                 printReceipt() {
-                    // Create a printable version of the receipt
-                    const receiptWindow = window.open('', '_blank', 'width=400,height=600');
+                    // Open the receipt in a new window using the route with the order ID
+                    const receiptWindow = window.open(`{{ url('/pos/receipt') }}/${this.lastOrderId}`, '_blank', 'width=400,height=600');
                     
                     if (receiptWindow) {
-                        let receiptContent = `
-                            <html>
-                            <head>
-                                <title>Receipt #${this.lastOrderNumber}</title>
-                                <style>
-                                    body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 0; padding: 20px; }
-                                    h1 { font-size: 16px; text-align: center; margin-bottom: 10px; }
-                                    .store-info { text-align: center; margin-bottom: 20px; }
-                                    .divider { border-top: 1px dashed #000; margin: 10px 0; }
-                                    .text-right { text-align: right; }
-                                    .text-center { text-align: center; }
-                                    table { width: 100%; border-collapse: collapse; }
-                                    th, td { padding: 5px; text-align: left; }
-                                    th { border-bottom: 1px solid #000; }
-                                    .total-row td { border-top: 1px solid #000; padding-top: 5px; font-weight: bold; }
-                                    .footer { margin-top: 30px; text-align: center; font-size: 10px; }
-                                </style>
-                            </head>
-                            <body>
-                                <div class="store-info">
-                                    <h1>RECEIPT</h1>
-                                    <div>Your Store Name</div>
-                                    <div>Store Address Line 1</div>
-                                    <div>Store Address Line 2</div>
-                                    <div>Phone: (123) 456-7890</div>
-                                </div>
-                                
-                                <div>
-                                    <div>Receipt #: ${this.lastOrderNumber}</div>
-                                    <div>Date: ${new Date().toLocaleString()}</div>
-                                    ${this.customerName ? `<div>Customer: ${this.customerName}</div>` : ''}
-                                </div>
-                                
-                                <div class="divider"></div>
-                                
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Item</th>
-                                            <th>Qty</th>
-                                            <th>Price</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                        `;
-                        
-                        this.cart.forEach(item => {
-                            receiptContent += `
-                                <tr>
-                                    <td>${item.name}</td>
-                                    <td>${item.quantity}</td>
-                                    <td>${this.formatCurrency(item.price)}</td>
-                                    <td>${this.formatCurrency(item.price * item.quantity)}</td>
-                                </tr>
-                                ${item.notes ? `<tr><td colspan="4" style="font-size:10px;padding-top:0">Note: ${item.notes}</td></tr>` : ''}
-                            `;
+                        // Let the browser load the page before printing
+                        receiptWindow.addEventListener('load', function() {
+                            receiptWindow.print();
                         });
-                        
-                        receiptContent += `
-                                        <tr>
-                                            <td colspan="3" class="text-right">Subtotal:</td>
-                                            <td>${this.formatCurrency(this.cartTotal)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td colspan="3" class="text-right">Tax (${this.taxPercentage}%):</td>
-                                            <td>${this.formatCurrency(this.taxAmount)}</td>
-                                        </tr>
-                                        ${this.discountAmount > 0 ? `
-                                        <tr>
-                                            <td colspan="3" class="text-right">Discount:</td>
-                                            <td>${this.formatCurrency(this.discountAmount)}</td>
-                                        </tr>` : ''}
-                                        <tr class="total-row">
-                                            <td colspan="3" class="text-right">TOTAL:</td>
-                                            <td>${this.formatCurrency(this.finalAmount)}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                
-                                <div class="divider"></div>
-                                
-                                <div>
-                                    <div>Payment Method: ${this.lastOrderPaymentMethod}</div>
-                                    ${this.orderNotes ? `<div>Notes: ${this.orderNotes}</div>` : ''}
-                                </div>
-                                
-                                <div class="footer">
-                                    <p>Thank you for your business!</p>
-                                </div>
-                            </body>
-                            </html>
-                        `;
-                        
-                        receiptWindow.document.open();
-                        receiptWindow.document.write(receiptContent);
-                        receiptWindow.document.close();
-                        receiptWindow.print();
                     }
                 },
                 

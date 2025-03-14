@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
+use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,7 +14,7 @@ use Filament\Tables\Table;
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -34,13 +35,9 @@ class ProductResource extends Resource
                     ->required()
                     ->numeric()
                     ->default(0),
-                Forms\Components\Select::make('category')
-                    ->options([
-                        'food' => 'Makanan',
-                        'beverage' => 'Minuman',
-                        'dessert' => 'Pencuci Mulut',
-                        'other' => 'Lainnya',
-                    ])
+                Forms\Components\Select::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name')
                     ->required(),
                 Forms\Components\FileUpload::make('image_path')
                     ->image()
@@ -66,20 +63,11 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('category')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'food' => 'Makanan',
-                        'beverage' => 'Minuman',
-                        'dessert' => 'Pencuci Mulut',
-                        'other' => 'Lainnya',
-                    })
-                    ->colors([
-                        'primary' => 'food',
-                        'success' => 'beverage',
-                        'warning' => 'dessert',
-                        'danger' => 'other',
-                    ]),
+                Tables\Columns\TextColumn::make('category.name') // Menggunakan relasi
+                    ->label('Kategori')
+                    ->sortable()
+                    ->searchable()
+                    ->badge(),
                 Tables\Columns\IconColumn::make('is_available')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -92,13 +80,10 @@ class ProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->options([
-                        'food' => 'Makanan',
-                        'beverage' => 'Minuman',
-                        'dessert' => 'Pencuci Mulut',
-                        'other' => 'Lainnya',
-                    ]),
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name') // Menggunakan relasi
+                    ->searchable(),
                 Tables\Filters\TernaryFilter::make('is_available'),
             ])
             ->actions([
@@ -111,6 +96,7 @@ class ProductResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {

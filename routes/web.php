@@ -52,3 +52,6 @@ Route::middleware(['auth', 'role:cashier'])->group(function () {
         return redirect()->route('login'); // Gunakan 'login' agar sesuai dengan perubahan di atas
     })->name('pos.logout');
 });
+Route::get('/pos/receipt/{order}', [POSController::class, 'showReceipt'])
+    ->name('pos.receipt.show')
+    ->middleware(['auth', 'role:cashier']);

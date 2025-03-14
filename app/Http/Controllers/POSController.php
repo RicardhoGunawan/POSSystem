@@ -3,18 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\StoreSetting;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Category;
 
 class POSController extends Controller
-{    public function index()
+{
+    public function index()
     {
         $products = Product::where('is_available', true)
             ->where('stock', '>', 0)
             ->get();
-        $categories = Product::select('category')->distinct()->pluck('category');
+        $categories = Category::select('id', 'name')->get(); // Mengambil ID dan Nama kategori
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         return view('pos.index', compact('products', 'categories', 'paymentMethods'));
@@ -29,7 +32,7 @@ class POSController extends Controller
                 'exists:products,id',
                 function ($attribute, $value, $fail) use ($request) {
                     $product = Product::find($value);
-                    $index = explode('.', $attribute)[1]; // Mendapatkan index dari items.*
+                    $index = explode('.', $attribute)[1];
                     $quantity = $request->items[$index]['quantity'] ?? 0;
 
                     if ($product && $product->stock < $quantity) {
@@ -70,8 +73,8 @@ class POSController extends Controller
                 $product->decrement('stock', $item['quantity']);
             }
 
-            $taxAmount = isset($validated['tax_percentage']) 
-                ? ($totalAmount * $validated['tax_percentage'] / 100) 
+            $taxAmount = isset($validated['tax_percentage'])
+                ? ($totalAmount * $validated['tax_percentage'] / 100)
                 : 0;
 
             $discountAmount = $validated['discount_amount'] ?? 0;
@@ -117,10 +120,14 @@ class POSController extends Controller
             ->where('is_available', true)
             ->where('stock', '>', 0);
 
+        // Perbaikan pencarian kategori menggunakan relasi
         if ($category) {
-            $query->where('category', $category);
+            $query->whereHas('category', function ($q) use ($category) {
+                $q->where('name', $category);
+            });
         }
 
+        // Perbaikan pencarian produk menggunakan LIKE dengan case-insensitive
         if ($search) {
             $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
         }
@@ -128,5 +135,30 @@ class POSController extends Controller
         $products = $query->get();
 
         return response()->json($products);
+    }
+    
+    /**
+     * Show the receipt for a specific order
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function showReceipt($id)
+    {
+        $order = Order::with(['orderItems.product', 'paymentMethod'])->findOrFail($id);
+        
+        // Get store settings or create default if not exists
+        $store = StoreSetting::first();
+        if (!$store) {
+            $store = new StoreSetting([
+                'store_name' => 'Your Store',
+                'address_line_1' => 'Store Address Line 1',
+                'address_line_2' => 'Store Address Line 2',
+                'phone' => '(123) 456-7890',
+                'footer_message' => 'Thank you for your business!'
+            ]);
+        }
+        
+        return view('pos.receipt', compact('order', 'store'));
     }
 }
