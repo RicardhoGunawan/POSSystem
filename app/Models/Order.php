@@ -21,12 +21,15 @@ class Order extends Model
         'status',
         'notes',
         'customer_name',
+        'user_id',
+        'cancelled_at',
+        'cancelled_by',
     ];
 
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($order) {
             $order->order_number = 'ORD-' . date('Ymd') . '-' . str_pad(random_int(1, 999), 3, '0', STR_PAD_LEFT);
         });
@@ -41,5 +44,9 @@ class Order extends Model
     {
         return $this->belongsTo(PaymentMethod::class);
     }
-    
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

@@ -141,6 +141,10 @@
                     <td>{{ $order->customer_name }}</td>
                 </tr>
                 @endif
+                <tr>
+                    <td>Cashier:</td>
+                    <td>{{ $order->user ? $order->user->name : 'Unknown' }}</td>
+                </tr>
             </table>
         </div>
 
@@ -204,9 +208,9 @@
         </div>
 
         <!-- Print Button -->
-        <div class="print-button">
+        <!-- <div class="print-button">
             <button onclick="window.print()">Print Receipt</button>
-        </div>
+        </div> -->
     </div>
 </body>
 </html>

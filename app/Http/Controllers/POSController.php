@@ -17,7 +17,7 @@ class POSController extends Controller
         $products = Product::where('is_available', true)
             ->where('stock', '>', 0)
             ->get();
-        $categories = Category::select('id', 'name')->get(); // Mengambil ID dan Nama kategori
+        $categories = Category::select('id', 'name')->get();
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         return view('pos.index', compact('products', 'categories', 'paymentMethods'));
@@ -80,7 +80,7 @@ class POSController extends Controller
             $discountAmount = $validated['discount_amount'] ?? 0;
             $finalAmount = $totalAmount + $taxAmount - $discountAmount;
 
-            // Create order
+            // Create order with user_id
             $order = Order::create([
                 'total_amount' => $totalAmount,
                 'tax_amount' => $taxAmount,
@@ -90,6 +90,7 @@ class POSController extends Controller
                 'status' => 'completed',
                 'notes' => $validated['notes'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
+                'user_id' => auth()->id(), // Menambahkan user_id dari user yang sedang login
             ]);
 
             // Insert multiple order items at once
@@ -97,11 +98,19 @@ class POSController extends Controller
 
             DB::commit();
 
+            // Load relations including user
+            $order->load(['orderItems.product', 'paymentMethod', 'user:id,name']);
+
+            // Add cashier_name to response
+            $orderData = $order->toArray();
+            $orderData['cashier_name'] = $order->user ? $order->user->name : 'Unknown';
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order berhasil dibuat',
-                'order' => $order->load('orderItems.product', 'paymentMethod'),
+                'order' => $orderData,
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -120,14 +129,12 @@ class POSController extends Controller
             ->where('is_available', true)
             ->where('stock', '>', 0);
 
-        // Perbaikan pencarian kategori menggunakan relasi
         if ($category) {
             $query->whereHas('category', function ($q) use ($category) {
                 $q->where('name', $category);
             });
         }
 
-        // Perbaikan pencarian produk menggunakan LIKE dengan case-insensitive
         if ($search) {
             $query->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
         }
@@ -136,7 +143,7 @@ class POSController extends Controller
 
         return response()->json($products);
     }
-    
+
     /**
      * Show the receipt for a specific order
      *
@@ -145,8 +152,9 @@ class POSController extends Controller
      */
     public function showReceipt($id)
     {
-        $order = Order::with(['orderItems.product', 'paymentMethod'])->findOrFail($id);
-        
+        $order = Order::with(['orderItems.product', 'paymentMethod', 'user'])
+            ->findOrFail($id);
+
         // Get store settings or create default if not exists
         $store = StoreSetting::first();
         if (!$store) {
@@ -158,7 +166,99 @@ class POSController extends Controller
                 'footer_message' => 'Thank you for your business!'
             ]);
         }
-        
+
         return view('pos.receipt', compact('order', 'store'));
     }
+
+    /**
+     * Get order history
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrderHistory()
+    {
+        $orders = Order::with(['paymentMethod', 'user:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($order) {
+                return array_merge($order->toArray(), [
+                    'cashier_name' => $order->user ? $order->user->name : 'Unknown'
+                ]);
+            });
+
+        return response()->json($orders);
+    }
+
+    /**
+     * Get a specific order with details
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrder($id)
+    {
+        $order = Order::with(['orderItems.product', 'paymentMethod', 'user:id,name'])
+            ->findOrFail($id);
+
+        $orderData = $order->toArray();
+        $orderData['cashier_name'] = $order->user ? $order->user->name : 'Unknown';
+
+        return response()->json($orderData);
+    }
+    /**
+     * Cancel an order
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelOrder($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $order = Order::with('orderItems.product')->findOrFail($id);
+
+            // Check if order can be cancelled (only completed orders can be cancelled)
+            if ($order->status !== 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya order dengan status completed yang dapat dibatalkan',
+                ], 400);
+            }
+
+            // Restore product stock
+            $updatedProducts = [];
+            foreach ($order->orderItems as $item) {
+                $item->product->increment('stock', $item->quantity);
+                // Collect updated product data
+                $updatedProducts[] = Product::find($item->product_id);
+            }
+
+            // Update order status
+            $order->status = 'cancelled';
+            $order->cancelled_at = now();
+            $order->cancelled_by = auth()->id();
+            $order->save();
+
+            DB::commit();
+
+            // Load fresh data with relationships
+            $order = $order->fresh(['orderItems.product', 'paymentMethod', 'user:id,name']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order berhasil dibatalkan',
+                'order' => $order,
+                'updatedProducts' => $updatedProducts
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

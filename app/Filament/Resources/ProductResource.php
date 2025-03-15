@@ -28,9 +28,13 @@ class ProductResource extends Resource
                     ->maxLength(65535)
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('price')
+                    ->label('Harga')
                     ->required()
                     ->numeric()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
+                    ->dehydrateStateUsing(fn ($state) => str_replace('.', '', $state)), // Menghilangkan titik sebelum disimpan ke database
+                
                 Forms\Components\TextInput::make('stock')
                     ->required()
                     ->numeric()
