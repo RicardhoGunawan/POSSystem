@@ -26,6 +26,13 @@ class StoreSettingResource extends Resource
                 Forms\Components\TextInput::make('store_name')
                     ->label('Store Name')
                     ->required(),
+                Forms\Components\TextInput::make('tax_percentage')
+                    ->label('Tax Percentage (%)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->default(0)
+                    ->helperText('Masukkan nilai dalam persen. Contoh: 10 untuk 10%'),
                 Forms\Components\TextInput::make('address_line_1')
                     ->label('Address Line 1'),
                 Forms\Components\TextInput::make('address_line_2')
@@ -42,6 +49,9 @@ class StoreSettingResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('store_name')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('tax_percentage')
+                    ->label('Tax (%)')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->sortable(),

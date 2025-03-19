@@ -16,19 +16,21 @@
         <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
             <!-- Logo & Title -->
             <div class="flex items-center space-x-3">
-                <div class="flex items-center">
+                <a href="/pos" class="flex items-center transition-transform transform hover:scale-105">
                     <i class="fas fa-shopping-cart text-blue-600 text-3xl mr-2"></i>
-                    <h1 class="text-2xl font-bold text-gray-800">POS System</h1>
-                </div>
+                    <h1 class="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors duration-300">POS System</h1>
+                </a>
+
+
                 <span class="hidden md:inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
                     <i class="fas fa-calendar-alt mr-1"></i> <span id="current-date"></span>
                 </span>
             </div>
 
             <!-- User Info & Dropdown -->
-            <div class="relative">
+            <div class="relative" x-data="{ dropdown: false }">
                 <!-- Button User -->
-                <button id="dropdownUserButton" data-dropdown-toggle="dropdownUser" 
+                <button @click="dropdown = !dropdown" type="button"
                     class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-lg py-2 px-3 transition duration-300">
                     <i class="fas fa-user-circle text-gray-600 text-lg"></i>
                     <span class="text-gray-700 font-medium">{{ auth()->user()->name }}</span>
@@ -37,14 +39,34 @@
                 </button>
 
                 <!-- Dropdown Menu -->
-                <div id="dropdownUser" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md w-44">
+                <div x-show="dropdown" @click.away="dropdown = false" 
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute right-0 mt-2 bg-white divide-y divide-gray-100 rounded-lg shadow-md w-44 z-50">
                     <ul class="py-2 text-sm text-gray-700">
+                        <!-- Order History Button inside Dropdown -->
+                        <li>
+                            <button 
+                                @click="$dispatch('toggle-order-history'); dropdown = false"
+                                class="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                type="button"
+                            >
+                                <i class="fas fa-history mr-2"></i> Order History
+                            </button>
+                        </li>
+                        <div class="border-t my-1"></div>
+                        
                         @if(auth()->user()->isAdmin())
                         <li>
                             <a href="/admin" class="block px-4 py-2 hover:bg-gray-100">Admin Panel</a>
                         </li>
                         <div class="border-t my-1"></div>
                         @endif
+                        
                         <li>
                             <form method="POST" action="{{ route('pos.logout') }}">
                                 @csrf
@@ -92,14 +114,6 @@
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                         </div>
                     </div>
-
-                    <!-- Order History Button -->
-                    <button 
-                        @click="toggleOrderHistory()" 
-                        class="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105"
-                    >
-                        <i class="fas fa-history mr-2"></i> Order History
-                    </button>
                 </div>
             </div>
 
@@ -252,6 +266,7 @@
         </div>
 
         <!-- Cart Section -->
+        <!-- Cart Section -->
         <div class="w-full md:w-1/3 bg-gray-50 p-6 overflow-y-auto border-l">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">Current Order</h2>
             
@@ -269,9 +284,13 @@
                             <template x-for="(item, index) in cart" :key="index">
                                 <li class="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
                                     <div class="flex justify-between items-center">
-                                        <div>
-                                            <h4 class="font-semibold text-gray-800" x-text="item.name"></h4>
-                                            <div class="text-sm text-gray-500" x-text="formatCurrency(item.price) + ' x ' + item.quantity"></div>
+                                        <div class="flex items-center">
+                                            <!-- Product Image -->
+                                            <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded-lg mr-4">
+                                            <div>
+                                                <h4 class="font-semibold text-gray-800" x-text="item.name"></h4>
+                                                <div class="text-sm text-gray-500" x-text="formatCurrency(item.price) + ' x ' + item.quantity"></div>
+                                            </div>
                                         </div>
                                         <div class="text-right">
                                             <div class="font-medium text-gray-800" x-text="formatCurrency(item.price * item.quantity)"></div>
@@ -295,6 +314,13 @@
                                 </li>
                             </template>
                         </ul>
+                        <!-- Clear Cart Button -->
+                        <div class="mt-6">
+                            <button @click="clearCart" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg w-full flex items-center justify-center transition-colors duration-200">
+                                <i class="fas fa-trash mr-2"></i>
+                                <span>Clear Cart</span>
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -312,9 +338,14 @@
                         <div class="flex justify-between items-center text-gray-700">
                             <span>Tax (%)</span>
                             <div class="w-20">
-                                <input type="number" x-model.number="taxPercentage" min="0" class="border border-gray-300 p-2 text-right w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" 
+                                    x-bind:value="taxPercentage + '%'" 
+                                    disabled 
+                                    class="border border-gray-300 p-2 text-right w-full rounded-lg bg-gray-100">
                             </div>
                         </div>
+
+
                         
                         <div class="flex justify-between text-gray-700">
                             <span>Tax Amount</span>
@@ -600,7 +631,7 @@
                 selectedCategory: '',
                 searchQuery: '',
                 orderSearchQuery: '',
-                taxPercentage: 10,
+                taxPercentage: 0, // Default diubah ke 0%
                 discountAmount: 0,
                 customerName: '',
                 paymentMethodId: '',
@@ -620,15 +651,39 @@
                 isCancelling: false,
                 showToast: false,
                 toastMessage: '',
+                isLoadingProducts: false,
                 
                 init() {
                     // Set CSRF token for fetch requests
                     this.fetchCsrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    this.fetchTaxPercentage(); // Ambil nilai pajak saat inisialisasi
+                    
+                    // Add event listener for the custom event dispatched from the header dropdown
+                    window.addEventListener('toggle-order-history', () => {
+                        this.toggleOrderHistory();
+                    });
                 },
                 
                 get cartTotal() {
                     return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
                 },
+                
+                fetchTaxPercentage() {
+                    this.isLoadingTax = true; // Aktifkan indikator loading
+                    
+                    fetch('{{ route('get.tax') }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.taxPercentage = data.tax_percentage ?? 0; // Set nilai pajak, default 0%
+                        })
+                        .catch(error => {
+                            console.error('Error fetching tax:', error);
+                        })
+                        .finally(() => {
+                            this.isLoadingTax = false; // Nonaktifkan indikator loading setelah selesai
+                        });
+                },
+
                 
                 get taxAmount() {
                     return (this.cartTotal * this.taxPercentage) / 100;
@@ -717,12 +772,12 @@
                         });
                     }
                 },
-                // Tambahkan metode-metode ini
+                
                 showCancelConfirmation(order) {
                     this.orderToCancel = order;
                     this.showCancelOrderModal = true;
                 },
-                // Tambahkan metode untuk memperbarui stok produk setelah pembatalan order
+                
                 forceProductsRefresh() {
                     // Meminta data produk terbaru dari server
                     fetch('{{ route("pos.products.get") }}')
@@ -737,7 +792,7 @@
                             console.error('Error refreshing products:', error);
                         });
                 },
-                // Modifikasi metode cancelOrder()
+                
                 cancelOrder() {
                     if (!this.orderToCancel || this.isCancelling) return;
                     
@@ -848,7 +903,9 @@
                             price: product.price,
                             quantity: 1,
                             notes: '',
-                            max_quantity: product.stock
+                            max_quantity: product.stock,
+                            image: `/storage/${product.image_path}`
+
                         });
                     }
                 },
@@ -871,6 +928,10 @@
                 
                 removeFromCart(index) {
                     this.cart.splice(index, 1);
+                },
+                // Clear cart
+                clearCart() {
+                    this.cart = [];
                 },
                 
                 processOrder() {

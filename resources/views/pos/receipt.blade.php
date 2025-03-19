@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,206 +11,191 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: monospace;
             font-size: 12px;
-            line-height: 1.4;
+            line-height: 1.3;
             margin: 0;
-            padding: 10px;
+            padding: 5px;
             max-width: 80mm;
+            background-color: white;
         }
 
         .container {
-            padding: 10px;
+            padding: 5px;
         }
 
-        .store-info {
+        .logo-text {
             text-align: center;
-            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 2px;
         }
 
         .store-name {
-            font-size: 16px;
-            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .receipt-info {
+            margin-top: 5px;
             margin-bottom: 5px;
         }
 
-        .receipt-header {
-            margin-bottom: 15px;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 10px;
+        .receipt-info table {
+            width: 100%;
         }
 
-        .receipt-table {
+        .dashed-line {
+            border-top: 1px dashed #000;
+            margin: 5px 0;
+        }
+
+        .order-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 5px;
         }
 
-        .receipt-table th,
-        .receipt-table td {
-            padding: 5px;
-            font-size: 11px;
+        .order-table td {
+            padding: 2px 0;
         }
 
-        .receipt-table th {
-            border-bottom: 1px solid #000;
-            text-align: left;
+        .right {
+            text-align: right;
         }
 
-        .item-note {
-            font-size: 10px;
-            font-style: italic;
-            color: #666;
-            padding-left: 5px;
+        .summary-table {
+            width: 100%;
+            margin-top: 5px;
         }
 
-        .total-section {
-            border-top: 1px solid #000;
-            font-weight: bold;
-        }
-
-        .payment-info {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px dashed #000;
-            border-bottom: 1px dashed #000;
+        .summary-table td {
+            padding: 2px 0;
         }
 
         .footer {
             text-align: center;
-            margin-top: 20px;
-            font-size: 10px;
+            margin-top: 15px;
+            font-size: 11px;
         }
 
-        .print-button {
+        .thank-you {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 10px;
+            font-weight: bold;
         }
 
-        .print-button button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .print-button button:hover {
-            background-color: #45a049;
-        }
-
-        @media print {
-            body {
-                padding: 0;
-            }
-
-            .print-button {
-                display: none;
-            }
+        .contact-info {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 11px;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- Store Info -->
-        <div class="store-info">
-            <div class="store-name">{{ $store->store_name }}</div>
-            <div>{{ $store->address_line_1 }}</div>
-            @if($store->address_line_2)
-                <div>{{ $store->address_line_2 }}</div>
-            @endif
-            <div>Tel: {{ $store->phone }}</div>
-        </div>
+        <!-- Logo and Store Name -->
+        <div class="logo-text">{{ strtoupper($store->store_name) }}</div>
+        <div class="store-name">{{ $store->store_name }}</div>
 
-        <!-- Receipt Header -->
-        <div class="receipt-header">
-            <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">RECEIPT</div>
-            <table style="width: 100%">
+        <!-- Receipt Information -->
+        <div class="receipt-info">
+            <table>
                 <tr>
-                    <td>Receipt:</td>
-                    <td>{{ $order->order_number }}</td>
+                    <td>No Nota</td>
+                    <td>: {{ $order->order_number }}</td>
                 </tr>
                 <tr>
-                    <td>Date:</td>
-                    <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                    <td>Waktu</td>
+                    <td>: {{ $order->created_at->format('d M y H:i') }}</td>
                 </tr>
-                @if($order->customer_name)
                 <tr>
-                    <td>Customer:</td>
-                    <td>{{ $order->customer_name }}</td>
+                    <td>Kasir</td>
+                    <td>: {{ $order->user ? $order->user->name : 'Kasir' }}</td>
                 </tr>
-                @endif
                 <tr>
-                    <td>Cashier:</td>
-                    <td>{{ $order->user ? $order->user->name : 'Unknown' }}</td>
+                    <td>Nama Order</td>
+                    <td>: {{ $order->customer_name ?? $order->id }}</td>
                 </tr>
             </table>
         </div>
 
-        <!-- Order Items -->
-        <table class="receipt-table">
-            <thead>
-                <tr>
-                    <th style="width: 40%">Item</th>
-                    <th style="width: 15%">Qty</th>
-                    <th style="width: 20%">Price</th>
-                    <th style="width: 25%">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($order->orderItems as $item)
-                    <tr>
-                        <td>{{ $item->product->name }}</td>
-                        <td>{{ $item->quantity }}</td>
-                        <td>Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                        <td>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
-                    </tr>
-                    @if($item->notes)
-                        <tr>
-                            <td colspan="4" class="item-note">Note: {{ $item->notes }}</td>
-                        </tr>
-                    @endif
-                @endforeach
+        <div class="dashed-line"></div>
 
+        <!-- Order Items -->
+        <table class="order-table">
+            @foreach($order->orderItems as $item)
                 <tr>
-                    <td colspan="3" style="text-align: right">Subtotal:</td>
-                    <td>Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                    <td>{{ $item->quantity }} {{ $item->product->name }}</td>
+                    <td class="right">{{ number_format($item->subtotal, 0, ',', ',') }}</td>
                 </tr>
-                <tr>
-                    <td colspan="3" style="text-align: right">Tax:</td>
-                    <td>Rp {{ number_format($order->tax_amount, 0, ',', '.') }}</td>
-                </tr>
-                @if($order->discount_amount > 0)
+                @if($item->notes)
                     <tr>
-                        <td colspan="3" style="text-align: right">Discount:</td>
-                        <td>Rp {{ number_format($order->discount_amount, 0, ',', '.') }}</td>
+                        <td>&nbsp;&nbsp;+ {{ $item->notes }}</td>
+                        <td></td>
                     </tr>
                 @endif
-                <tr class="total-section">
-                    <td colspan="3" style="text-align: right">TOTAL:</td>
-                    <td>Rp {{ number_format($order->final_amount, 0, ',', '.') }}</td>
-                </tr>
-            </tbody>
+            @endforeach
         </table>
 
-        <!-- Payment Info -->
-        <div class="payment-info">
-            <div>Payment Method: {{ $order->paymentMethod->name }}</div>
-            @if($order->notes)
-                <div style="margin-top: 5px;">Notes: {{ $order->notes }}</div>
+        <div class="dashed-line"></div>
+
+        <!-- Totals -->
+        <table class="summary-table">
+            <tr>
+                <td>Subtotal {{ $order->orderItems->sum('quantity') }} Produk</td>
+                <td class="right">{{ number_format($order->total_amount, 0, ',', ',') }}</td>
+            </tr>
+            @if($order->tax_amount > 0)
+                <tr>
+                    <td>Pajak</td>
+                    <td class="right">{{ number_format($order->tax_amount, 0, ',', ',') }}</td>
+                </tr>
+            @endif
+            @if($order->discount_amount > 0)
+                <tr>
+                    <td>Diskon</td>
+                    <td class="right">{{ number_format($order->discount_amount, 0, ',', ',') }}</td>
+                </tr>
+            @endif
+            <tr>
+                <td>Total Tagihan</td>
+                <td class="right">{{ number_format($order->final_amount, 0, ',', ',') }}</td>
+            </tr>
+            <tr>
+                <td>{{ $order->paymentMethod->name }}</td>
+                <td class="right">{{ number_format($order->paid_amount, 0, ',', ',') }}</td>
+            </tr>
+            @if($order->paid_amount > $order->final_amount)
+                <tr>
+                    <td>Kembalian</td>
+                    <td class="right">{{ number_format($order->paid_amount - $order->final_amount, 0, ',', ',') }}</td>
+                </tr>
+            @endif
+        </table>
+
+        <div class="dashed-line"></div>
+
+        <!-- Thank You Message -->
+        <div class="thank-you">{{ $store->footer_message ?? 'Terima Kasih!' }}</div>
+
+        <!-- Contact Information -->
+        <div class="contact-info">
+            @if($store->phone)
+                <p>CP: {{ $store->phone }}</p>
+            @endif
+            @if($store->social_media)
+                <p>Instagram: {{ $store->social_media }}</p>
             @endif
         </div>
 
-        <!-- Footer -->
+        <!-- Payment Time -->
         <div class="footer">
-            <p>{{ $store->footer_message }}</p>
+            <p>Terbayar {{ $order->created_at->format('d M y H:i') }}</p>
+            <p>dicetak: {{ $order->user ? $order->user->name : 'Kasir' }}</p>
         </div>
-
-        <!-- Print Button -->
-        <!-- <div class="print-button">
-            <button onclick="window.print()">Print Receipt</button>
-        </div> -->
     </div>
 </body>
 </html>

@@ -13,6 +13,7 @@ class StoreSetting extends Model
 
     protected $fillable = [
         'store_name',
+        'tax_percentage',
         'address_line_1',
         'address_line_2',
         'phone',

@@ -13,7 +13,8 @@ class Order extends Model
 
     protected $fillable = [
         'order_number',
-        'total_amount',
+        'total_amount', // Tambahkan ini
+        'tax_percentage',
         'tax_amount',
         'discount_amount',
         'final_amount',

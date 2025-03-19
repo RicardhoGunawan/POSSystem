@@ -1,66 +1,39 @@
 <?php
 
 use App\Http\Controllers\POSController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Auth\POSAuthController;
+use App\Models\StoreSetting;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 // Halaman utama
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Rute Login POS
-Route::get('/pos/login', function () {
-    return view('pos.login');
-})->name('login'); // Gunakan 'login' agar middleware auth bisa menemukannya
+// Auth Routes
+Route::get('/pos/login', [POSAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/pos/login', [POSAuthController::class, 'login'])->name('pos.login.post');
 
-Route::post('/pos/login', function (Request $request) {
-    $credentials = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
-
-    if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
-
-        if (auth()->user()->isAdmin()) {
-            return redirect()->intended(
-                $request->input('redirect', 'pos.index') === 'admin' 
-                    ? '/admin' 
-                    : route('pos.index')
-            );
-        }
-
-        return redirect()->route('pos.index');
-    }
-
-    return back()->withErrors([
-        'email' => 'Kredensial tidak valid.',
-    ]);
-})->name('pos.login.post');
-
-// Rute POS (memerlukan autentikasi)
+// POS Routes (authenticated)
 Route::middleware(['auth', 'role:cashier'])->group(function () {
     Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
-    Route::post('/pos/orders', [POSController::class, 'store'])->name('pos.orders.store');
     Route::get('/pos/products', [POSController::class, 'getProducts'])->name('pos.products.get');
-
-    // Logout POS
-    Route::post('/pos/logout', function (Request $request) {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login'); // Gunakan 'login' agar sesuai dengan perubahan di atas
-    })->name('pos.logout');
-
-    // Tampilkan struk pesanan
-    Route::get('/pos/receipt/{order}', [POSController::class, 'showReceipt'])
-        ->name('pos.receipt.show');
+    Route::post('/pos/orders', [OrderController::class, 'store'])->name('pos.orders.store');
+    Route::get('/pos/receipt/{order}', [POSController::class, 'showReceipt'])->name('pos.receipt.show');
+    Route::post('/pos/logout', [POSAuthController::class, 'logout'])->name('pos.logout');
 });
 
-// Rute Order (dapat digunakan untuk admin atau role lain)
-Route::get('/orders/history', [POSController::class, 'getOrderHistory'])->name('orders.history');
-Route::get('/orders/{id}', [POSController::class, 'getOrder'])->name('orders.show');
+// Order Routes
+Route::get('/orders/history', [OrderController::class, 'getOrderHistory'])->name('orders.history');
+Route::get('/orders/{id}', [OrderController::class, 'getOrder'])->name('orders.show');
+Route::post('/pos/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])->name('pos.orders.cancel');
 
-Route::post('/pos/orders/{id}/cancel', [POSController::class, 'cancelOrder'])->name('pos.orders.cancel');
+// tax routes
+Route::get('/get-tax', function () {
+    $tax = StoreSetting::first()?->tax_percentage ?? 0;
+
+    return response()->json([
+        'tax_percentage' => (float) $tax * 100 // Konversi string ke float dan dikalikan 100 jika disimpan dalam bentuk desimal
+    ]);
+})->name('get.tax');
