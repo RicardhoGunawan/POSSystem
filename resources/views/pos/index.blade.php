@@ -344,8 +344,6 @@
                                     class="border border-gray-300 p-2 text-right w-full rounded-lg bg-gray-100">
                             </div>
                         </div>
-
-
                         
                         <div class="flex justify-between text-gray-700">
                             <span>Tax Amount</span>
@@ -370,9 +368,11 @@
                         <input type="text" x-model="customerName" class="border border-gray-300 p-2 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
+                    <!-- Pilihan Metode Pembayaran -->
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">Payment Method</label>
-                        <select x-model="paymentMethodId" class="border border-gray-300 p-2 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select x-model="paymentMethodId" 
+                                class="border border-gray-300 p-2 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Select Payment Method</option>
                             @foreach($paymentMethods as $method)
                                 <option value="{{ $method->id }}">{{ $method->name }}</option>
@@ -380,12 +380,49 @@
                         </select>
                     </div>
 
+                    <!-- Numpad hanya muncul jika metode pembayaran adalah Cash -->
+                    <template x-if="paymentMethodId == 1">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Enter Cash Amount</label>
+                            <input type="text" 
+                                x-model="formattedCashAmount"
+                                @keydown="handleKeyDown($event)"
+                                @input="formatCashInput"
+                                @focus="$event.target.select()"
+                                class="border border-gray-300 p-2 w-full rounded-lg text-right text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                            <!-- Numpad -->
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                <template x-for="num in [1,2,3,4,5,6,7,8,9,0]">
+                                    <button @click="appendNumber(num)" 
+                                            class="p-4 text-xl bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 transition-colors duration-150 transform active:scale-95">
+                                        <span x-text="num"></span>
+                                    </button>
+                                </template>
+                                <button @click="clearCashAmount()" 
+                                        class="p-4 text-xl bg-red-500 text-white rounded-lg hover:bg-red-600 active:bg-red-700 transition-colors duration-150 transform active:scale-95">
+                                    C
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Menampilkan kembalian -->
+                    <template x-if="paymentMethodId == 1 && Number(cashAmount) >= finalAmount">
+                        <div class="text-green-600 font-bold text-xl mt-4">
+                            Change: <span x-text="formatCurrency(Number(cashAmount) - finalAmount)"></span>
+                        </div>
+                    </template>
+
                     <div class="mb-6">
                         <label class="block text-gray-700 text-sm font-bold mb-2">Notes (Optional)</label>
                         <textarea x-model="orderNotes" class="border border-gray-300 p-2 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
                     </div>
 
-                    <button @click="processOrder()" :disabled="isProcessing || cart.length === 0 || !paymentMethodId" :class="{'opacity-50 cursor-not-allowed': isProcessing || cart.length === 0 || !paymentMethodId}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg w-full flex items-center justify-center transition-colors duration-200">
+                    <button @click="processOrder()" 
+                            :disabled="isProcessing || cart.length === 0 || !paymentMethodId || (paymentMethodId == 1 && Number(cashAmount) < finalAmount)" 
+                            :class="{'opacity-50 cursor-not-allowed': isProcessing || cart.length === 0 || !paymentMethodId || (paymentMethodId == 1 && Number(cashAmount) < finalAmount)}" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg w-full flex items-center justify-center transition-colors duration-200">
                         <i class="fas fa-check-circle mr-2"></i>
                         <span x-text="isProcessing ? 'Processing...' : 'Complete Order'"></span>
                     </button>
@@ -652,6 +689,10 @@
                 showToast: false,
                 toastMessage: '',
                 isLoadingProducts: false,
+                cashAmount: '',
+                formattedCashAmount: '',
+
+
                 
                 init() {
                     // Set CSRF token for fetch requests
@@ -662,6 +703,52 @@
                     window.addEventListener('toggle-order-history', () => {
                         this.toggleOrderHistory();
                     });
+                },
+                // Numpad methods
+                appendNumber(num) {
+                    // Tambahkan angka ke cashAmount
+                    this.cashAmount = (this.cashAmount || '') + num;
+                    // Update formattedCashAmount
+                    this.updateFormattedCashAmount();
+                },
+                
+                clearCashAmount() {
+                    this.cashAmount = '';
+                    this.formattedCashAmount = '';
+                },
+                // Fungsi untuk format input cash
+                formatCashInput() {
+                    // Hapus semua karakter non-digit (termasuk titik)
+                    const onlyNumbers = this.formattedCashAmount.replace(/\D/g, '');
+                    
+                    // Update nilai cashAmount
+                    this.cashAmount = onlyNumbers;
+                    
+                    // Update nilai yang terformat
+                    this.updateFormattedCashAmount();
+                },
+                // Update tampilan input dengan format ribuan
+                updateFormattedCashAmount() {
+                    // Format angka dengan pemisah ribuan
+                    if (this.cashAmount) {
+                        this.formattedCashAmount = Number(this.cashAmount).toLocaleString('id-ID');
+                    } else {
+                        this.formattedCashAmount = '';
+                    }
+                },
+                // Fungsi baru untuk menangani input keyboard
+                handleKeyDown(event) {
+                    // Hanya menerima angka (0-9), backspace, delete, dan tombol arah
+                    const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight'];
+                    
+                    if (!allowedKeys.includes(event.key)) {
+                        event.preventDefault();
+                    }
+                },
+                // Fungsi untuk memvalidasi input cash
+                validateCashInput() {
+                    // Hapus karakter selain angka
+                    this.cashAmount = this.cashAmount.replace(/[^\d]/g, '');
                 },
                 
                 get cartTotal() {
@@ -945,6 +1032,14 @@
                         return;
                     }
                     
+                    // Add cash validation for payment method 1 (Cash)
+                    if (this.paymentMethodId == 1) {
+                        if (!this.cashAmount || Number(this.cashAmount) < this.finalAmount) {
+                            alert('Cash amount must be equal to or greater than the total amount');
+                            return;
+                        }
+                    }
+                    
                     this.isProcessing = true;
                     
                     const orderData = {
@@ -959,6 +1054,12 @@
                         tax_percentage: this.taxPercentage,
                         discount_amount: this.discountAmount
                     };
+                    
+                    // Add cash details if payment method is cash
+                    if (this.paymentMethodId == 1) {
+                        orderData.cash_amount = Number(this.cashAmount);
+                        orderData.cash_change = Number(this.cashAmount) - this.finalAmount;
+                    }
                     
                     fetch('{{ route('pos.orders.store') }}', {
                         method: 'POST',
@@ -1032,6 +1133,8 @@
                     this.customerName = '';
                     this.paymentMethodId = '';
                     this.orderNotes = '';
+                    this.cashAmount = '';
+                    this.formattedCashAmount = '';
                 }
             };
         }
