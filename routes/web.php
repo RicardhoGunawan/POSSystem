@@ -13,7 +13,7 @@ Route::get('/', function () {
 
 // Auth Routes
 Route::get('/pos/login', [POSAuthController::class, 'showLoginForm'])->name('login');
-Route::post('/pos/login', [POSAuthController::class, 'login'])->name('pos.login.post');
+Route::post('/pos/login', action: [POSAuthController::class, 'login'])->name('pos.login.post');
 
 // POS Routes (authenticated)
 Route::middleware(['auth', 'role:cashier'])->group(function () {

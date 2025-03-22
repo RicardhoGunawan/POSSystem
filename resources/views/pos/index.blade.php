@@ -68,7 +68,7 @@
                         @endif
                         
                         <li>
-                            <form method="POST" action="{{ route('pos.logout') }}">
+                            <form action="/pos/logout" method="POST">
                                 @csrf
                                 <button type="submit" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
                                     <i class="fas fa-sign-out-alt mr-2"></i> Logout
@@ -800,7 +800,7 @@
                 fetchTaxPercentage() {
                     this.isLoadingTax = true; // Aktifkan indikator loading
                     
-                    fetch('{{ route('get.tax') }}')
+                    fetch('/get-tax') // Relative URL
                         .then(response => response.json())
                         .then(data => {
                             this.taxPercentage = data.tax_percentage ?? 0; // Set nilai pajak, default 0%
@@ -852,7 +852,7 @@
                 loadOrders() {
                     this.isLoadingOrders = true;
                     
-                    fetch('{{ route('orders.history') }}')
+                    fetch('/orders/history') // Use a relative URL
                         .then(response => response.json())
                         .then(data => {
                             this.orders = data;
@@ -880,7 +880,7 @@
                 
                 viewOrderDetails(order) {
                     // Fetch complete order details including items
-                    fetch(`{{ url('/orders') }}/${order.id}`)
+                    fetch(`/orders/${order.id}`) // Use a relative URL
                         .then(response => response.json())
                         .then(data => {
                             this.selectedOrder = data;
@@ -909,7 +909,7 @@
                 
                 forceProductsRefresh() {
                     // Meminta data produk terbaru dari server
-                    fetch('{{ route("pos.products.get") }}')
+                    fetch('/pos/products/get')
                         .then(response => response.json())
                         .then(data => {
                             // Perbarui array products dengan data terbaru
@@ -1103,7 +1103,7 @@
                         orderData.cash_change = Number(this.cashAmount) - this.finalAmount;
                     }
                     
-                    fetch('{{ route('pos.orders.store') }}', {
+                    fetch('/pos/orders', { // Relative URL
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
