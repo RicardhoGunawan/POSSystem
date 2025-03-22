@@ -21,6 +21,8 @@ class OrderController extends Controller
             'customer_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'discount_amount' => 'nullable|numeric|min:0',
+            'cash_amount' => 'nullable|numeric|required_if:payment_method_id,1',
+            'cash_change' => 'nullable|numeric|required_if:payment_method_id,1',
         ]);
 
         try {
@@ -45,7 +47,6 @@ class OrderController extends Controller
                 $product->decrement('stock', $item['quantity']);
             }
 
-            // Ambil pajak dari store_settings atau default ke 0%
             $storeSetting = StoreSetting::first();
             $taxPercentage = $storeSetting ? $storeSetting->tax_percentage : 0;
 
@@ -53,7 +54,8 @@ class OrderController extends Controller
             $discountAmount = $validated['discount_amount'] ?? 0;
             $finalAmount = $totalAmount + $taxAmount - $discountAmount;
 
-            $order = Order::create([
+            // Data dasar order
+            $orderData = [
                 'total_amount' => $totalAmount,
                 'tax_percentage' => $taxPercentage,
                 'tax_amount' => $taxAmount,
@@ -64,7 +66,15 @@ class OrderController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'user_id' => auth()->id(),
-            ]);
+            ];
+
+            // Tambahkan data cash jika metode pembayaran adalah cash (id = 1)
+            if ($validated['payment_method_id'] == 1) {
+                $orderData['cash_amount'] = $validated['cash_amount'];
+                $orderData['cash_change'] = $validated['cash_change'];
+            }
+
+            $order = Order::create($orderData);
 
             $order->orderItems()->createMany($orderItems);
 

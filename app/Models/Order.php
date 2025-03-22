@@ -25,6 +25,8 @@ class Order extends Model
         'user_id',
         'cancelled_at',
         'cancelled_by',
+        'cash_amount',
+        'cash_change'
     ];
 
     protected static function boot()

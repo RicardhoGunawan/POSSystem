@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,7 +95,7 @@
     </style>
 </head>
 
-<body>
+<body >
     <div class="container">
         <!-- Logo and Store Name -->
         <div class="logo-text">{{ strtoupper($store->store_name) }}</div>
@@ -160,18 +161,27 @@
                     <td class="right">{{ number_format($order->discount_amount, 0, ',', ',') }}</td>
                 </tr>
             @endif
-            <tr>
+            <tr class="font-bold">
                 <td>Total Tagihan</td>
                 <td class="right">{{ number_format($order->final_amount, 0, ',', ',') }}</td>
             </tr>
+
+            <!-- Informasi Pembayaran -->
             <tr>
-                <td>{{ $order->paymentMethod->name }}</td>
-                <td class="right">{{ number_format($order->paid_amount, 0, ',', ',') }}</td>
+                <td colspan="2" class="pt-2 border-t">Pembayaran:</td>
             </tr>
-            @if($order->paid_amount > $order->final_amount)
+            <tr>
+                <td>Metode</td>
+                <td class="right">{{ $order->paymentMethod->name }}</td>
+            </tr>
+            @if($order->paymentMethod->id == 1) {{-- Jika pembayaran cash --}}
                 <tr>
+                    <td>Uang Diterima</td>
+                    <td class="right">{{ number_format($order->cash_amount, 0, ',', ',') }}</td>
+                </tr>
+                <tr class="font-bold">
                     <td>Kembalian</td>
-                    <td class="right">{{ number_format($order->paid_amount - $order->final_amount, 0, ',', ',') }}</td>
+                    <td class="right">{{ number_format($order->cash_change, 0, ',', ',') }}</td>
                 </tr>
             @endif
         </table>
@@ -198,4 +208,5 @@
         </div>
     </div>
 </body>
+
 </html>

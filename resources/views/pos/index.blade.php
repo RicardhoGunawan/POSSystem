@@ -465,7 +465,15 @@
             </div>
             
             <!-- Order Details Modal -->
-            <div x-show="showOrderDetailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click.self="showOrderDetailsModal = false">
+            <div x-show="showOrderDetailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" 
+                x-transition:enter="transition ease-out duration-300" 
+                x-transition:enter-start="opacity-0" 
+                x-transition:enter-end="opacity-100" 
+                x-transition:leave="transition ease-in duration-200" 
+                x-transition:leave-start="opacity-100" 
+                x-transition:leave-end="opacity-0" 
+                @click.self="showOrderDetailsModal = false">
+                
                 <div class="bg-white rounded-lg shadow-lg p-4 w-full max-w-[90%] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                     <!-- Header -->
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -475,9 +483,9 @@
                         </button>
                     </div>
 
-                    <!-- Order & Customer Info -->
+                    <!-- Order & Customer Info Section -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <!-- Order Information Card -->
+                        <!-- Left Column: Order Information -->
                         <div class="bg-gray-50 p-3 rounded-lg shadow-sm">
                             <h4 class="font-semibold text-gray-700 text-sm border-b pb-1 mb-2">Order Information</h4>
                             <div class="space-y-2 text-xs text-gray-600">
@@ -487,15 +495,14 @@
                                 </div>
                                 <div class="flex justify-between">
                                     <span>Status:</span>
-                                    <span class="py-1 px-2 rounded-full text-xs font-semibold" :class="{
-                                        'bg-green-100 text-green-700': selectedOrder.status === 'completed',
-                                        'bg-yellow-100 text-yellow-700': selectedOrder.status === 'pending',
-                                        'bg-red-100 text-red-700': selectedOrder.status === 'cancelled'
-                                    }" x-text="selectedOrder.status"></span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Payment Method:</span>
-                                    <span x-text="selectedOrder.payment_method?.name || '-'"></span>
+                                    <span class="py-1 px-2 rounded-full text-xs font-semibold" 
+                                        :class="{
+                                            'bg-green-100 text-green-700': selectedOrder.status === 'completed',
+                                            'bg-yellow-100 text-yellow-700': selectedOrder.status === 'pending',
+                                            'bg-red-100 text-red-700': selectedOrder.status === 'cancelled'
+                                        }" 
+                                        x-text="selectedOrder.status">
+                                    </span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span>Cashier:</span>
@@ -504,7 +511,7 @@
                             </div>
                         </div>
 
-                        <!-- Customer Information Card -->
+                        <!-- Right Column: Customer Information -->
                         <div class="bg-gray-50 p-3 rounded-lg shadow-sm">
                             <h4 class="font-semibold text-gray-700 text-sm border-b pb-1 mb-2">Customer Information</h4>
                             <div class="space-y-2 text-xs text-gray-600">
@@ -549,25 +556,60 @@
                         </div>
                     </div>
 
-                    <!-- Order Summary Card -->
+                    <!-- Combined Order Summary & Payment Information Card -->
                     <div class="bg-gray-50 p-3 rounded-lg shadow-sm mb-4">
-                        <h4 class="font-semibold text-gray-700 text-sm mb-2">Order Summary</h4>
-                        <div class="space-y-2 text-xs text-gray-600">
-                            <div class="flex justify-between">
-                                <span>Subtotal:</span>
-                                <span x-text="formatCurrency(selectedOrder.total_amount ?? 0)"></span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Left Column: Order Summary -->
+                            <div>
+                                <h4 class="font-semibold text-gray-700 text-sm border-b pb-1 mb-2">Order Summary</h4>
+                                <div class="space-y-2 text-xs text-gray-600">
+                                    <div class="flex justify-between">
+                                        <span>Subtotal:</span>
+                                        <span x-text="formatCurrency(selectedOrder.total_amount ?? 0)"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Tax:</span>
+                                        <span x-text="formatCurrency(selectedOrder.tax_amount ?? 0)"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Discount:</span>
+                                        <span x-text="formatCurrency(selectedOrder.discount_amount ?? 0)"></span>
+                                    </div>
+                                    <div class="flex justify-between font-semibold text-sm border-t pt-2 text-gray-800">
+                                        <span>Total:</span>
+                                        <span x-text="formatCurrency(selectedOrder.final_amount ?? 0)"></span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex justify-between">
-                                <span>Tax:</span>
-                                <span x-text="formatCurrency(selectedOrder.tax_amount ?? 0)"></span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Discount:</span>
-                                <span x-text="formatCurrency(selectedOrder.discount_amount ?? 0)"></span>
-                            </div>
-                            <div class="flex justify-between font-semibold text-sm border-t pt-2 text-gray-800">
-                                <span>Total:</span>
-                                <span x-text="formatCurrency(selectedOrder.final_amount ?? 0)"></span>
+                            
+                            <!-- Right Column: Payment Information -->
+                            <div>
+                                <h4 class="font-semibold text-gray-700 text-sm border-b pb-1 mb-2">Payment Information</h4>
+                                <div class="space-y-2 text-xs text-gray-600">
+                                    <div class="flex justify-between">
+                                        <span>Method:</span>
+                                        <span x-text="selectedOrder.payment_method?.name || '-'"></span>
+                                    </div>
+                                    
+                                    <!-- Cash payment details - shown only for cash payment method -->
+                                    <template x-if="selectedOrder.payment_method_id == 1">
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <span>Cash Amount:</span>
+                                                <span x-text="formatCurrency(selectedOrder.cash_amount || 0)"></span>
+                                            </div>
+                                            <div class="flex justify-between font-semibold text-green-600">
+                                                <span>Change:</span>
+                                                <span x-text="formatCurrency(selectedOrder.cash_change || 0)"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    
+                                    <div class="flex justify-between font-semibold pt-2 text-gray-800">
+                                        <span>Total Paid:</span>
+                                        <span x-text="formatCurrency(selectedOrder.final_amount ?? 0)"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
