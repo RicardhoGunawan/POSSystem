@@ -10,3 +10,22 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+.filament-stats-overview-widget .stat-card {
+    transition: all 0.3s ease;
+}
+
+.filament-stats-overview-widget .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.filament-stats-overview-widget .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.filament-stats-overview-widget .stat-description {
+    font-size: 0.875rem;
+    color: #64748b;
+}

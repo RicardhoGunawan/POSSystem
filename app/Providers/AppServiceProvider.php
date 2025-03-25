@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Filament\Pages\PosSystem;
 use Filament\Panel;
 use Illuminate\Support\ServiceProvider;
+use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentColor;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        
     }
 
     /**

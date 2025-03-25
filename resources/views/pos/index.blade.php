@@ -424,7 +424,7 @@
                             :class="{'opacity-50 cursor-not-allowed': isProcessing || cart.length === 0 || !paymentMethodId || (paymentMethodId == 1 && Number(cashAmount) < finalAmount)}" 
                             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg w-full flex items-center justify-center transition-colors duration-200">
                         <i class="fas fa-check-circle mr-2"></i>
-                        <span x-text="isProcessing ? 'Processing...' : 'Complete Order'"></span>
+                        <span x-text="isProcessing ? 'Processing...' : 'Process Order'"></span>
                     </button>
                 </div>
             </template>
